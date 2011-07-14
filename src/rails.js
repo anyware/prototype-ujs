@@ -85,7 +85,10 @@
     var method, url, params;
 
     var event = element.fire("ajax:before");
-    if (event.stopped) return false;
+    if (event.stopped) {
+			element.fire("ajax:stopped");
+			return false;
+		}
 
     if (element.tagName.toLowerCase() === 'form') {
       method = element.readAttribute('method') || 'post';
@@ -106,9 +109,19 @@
       evalScripts: true,
 
       onCreate:   function(response) { element.fire("ajax:create",   response); },
-      onComplete: function(response) { element.fire("ajax:complete", response); },
-      onSuccess:  function(response) { element.fire("ajax:success",  response); },
-      onFailure:  function(response) { element.fire("ajax:failure",  response); }
+			onComplete:    function(request) {
+				if(!$(element).descendantOf(document)){
+					if(!$("rails_reserved_garbage")){
+						(document.body).insert('<div style="display:none;" id="rails_reserved_garbage"></div>');
+					}
+					$("rails_reserved_garbage").update(element);
+				}
+				element.fire("ajax:complete", request);
+				$("rails_reserved_garbage").remove(element); 
+			},
+			onSuccess:     function(request) { element.fire("ajax:success",  request); },
+			onFailure:     function(request) { element.fire("ajax:failure",  request); }
+
     });
 
     element.fire("ajax:after");
